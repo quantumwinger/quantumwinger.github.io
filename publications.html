@@ -11,6 +11,33 @@
         rel="stylesheet" />
     <link href="style.css?v=6" rel="stylesheet" />
     <link rel="icon" href="logo.png" type="image/png">
+    <style>
+        .pub-era-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.5rem 0;
+        }
+        .pub-era-divider::before,
+        .pub-era-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #ccc, transparent);
+        }
+        .pub-era-label {
+            flex-shrink: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: #888;
+            background: var(--card-bg, #fff);
+            border: 1px solid #ccc;
+            padding: 0.35rem 1rem;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+    </style>
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RTHQSYBFK3"></script>
     <script>
