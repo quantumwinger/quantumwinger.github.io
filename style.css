@@ -535,6 +535,34 @@ p {
     margin: 0 auto;
 }
 
+.pub-era-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+}
+
+.pub-era-divider::before,
+.pub-era-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border-color), transparent);
+}
+
+.pub-era-label {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
 .pub-item {
     display: flex;
     align-items: center;
