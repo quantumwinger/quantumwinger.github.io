@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wave Mechanics & Schrödinger's Equation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d2e;
+      --card-border: #2a2d42;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --accent-green: #34d399;
+      --accent-orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background:
+        radial-gradient(ellipse at 25% 25%, rgba(59,130,246,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 75%, rgba(139,92,246,0.05) 0%, transparent 50%);
+      animation: drift 22s ease-in-out infinite alternate;
+      z-index: -1;
+    }
+
+    @keyframes drift {
+      0%   { transform: translate(0,0) rotate(0deg); }
+      100% { transform: translate(-3%,2%) rotate(3deg); }
+    }
+
+    header {
+      text-align: center;
+      padding: 2.5rem 1rem 1rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2.1rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.95rem; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+    /* ── Stats card ── */
+    .stats-card {
+      background: linear-gradient(135deg, var(--card), #1e2235);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      margin: 1.2rem auto;
+      max-width: 720px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .stat { text-align: center; }
+    .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
+    .stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .stat-value.blue   { color: var(--accent-blue); }
+    .stat-value.purple { color: var(--accent-purple); }
+    .stat-value.red    { color: var(--accent-red); }
+    .stat-value.green  { color: var(--accent-green); }
+    .stat-value.orange { color: var(--accent-orange); }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      margin: 1.2rem 0;
+      align-items: flex-start;
+    }
+
+    .slider-group {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      min-width: 240px;
+      flex: 1;
+      max-width: 320px;
+    }
+
+    .slider-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: 500;
+      margin-bottom: 0.6rem;
+      font-size: 0.88rem;
+    }
+
+    .slider-val { font-weight: 700; font-size: 1.05rem; color: var(--accent-blue); font-variant-numeric: tabular-nums; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%; height: 6px;
+      border-radius: 3px;
+      background: #2a2d42;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      box-shadow: 0 0 10px rgba(59,130,246,0.5);
+      transition: box-shadow 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 18px rgba(59,130,246,0.7); }
+    input[type=range]::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      border: none;
+      box-shadow: 0 0 10px rgba(59,130,246,0.5);
+    }
+
+    .anim-controls {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      min-width: 160px;
+    }
+
+    #btn-play {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.55rem 1.6rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+    }
+    #btn-play:hover { opacity: 0.85; transform: scale(1.03); }
+    .speed-label { font-size: 0.78rem; color: var(--text-muted); text-align: center; }
+
+    /* ── Plots ── */
+    .plots {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1.2rem;
+    }
+    @media (max-width: 700px) { .plots { grid-template-columns: 1fr; } }
+
+    .plot-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .plot-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .plot-card.wf::after   { background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); }
+    .plot-card.prob::after { background: linear-gradient(90deg, transparent, var(--accent-red), transparent); }
+
+    .plot-card h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+    .legend-dot { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+
+    canvas { width: 100%; height: auto; display: block; border-radius: 8px; }
+
+    /* ── Info section ── */
+    .info-section {
+      margin-top: 2rem;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .info-section h2 { font-size: 1.05rem; font-weight: 600; color: var(--accent-purple); margin-bottom: 0.9rem; }
+    .info-section p, .info-section li { color: var(--text-muted); line-height: 1.7; font-size: 0.91rem; }
+    .info-section ul { margin-left: 1.2rem; margin-top: 0.5rem; }
+    .info-section li { margin-bottom: 0.4rem; }
+
+    .formula-box {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 10px;
+      padding: 0.9rem 1.4rem;
+      margin: 0.9rem 0;
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text);
+      overflow-x: auto;
+    }
+
+    .divider { border: none; border-top: 1px solid var(--card-border); margin: 1.2rem 0; }
+
+    footer { text-align: center; padding: 2rem 1rem; color: var(--text-dim); font-size: 0.78rem; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>&#x269B;&#xFE0F; Wave Mechanics &amp; Schr&ouml;dinger&apos;s Equation</h1>
+    <p style="margin-top:0.3rem; font-size:0.85rem; color:#64748b;">Developed by <strong style="color:#a78bfa;">Saswata Dasgupta</strong></p>
+  </header>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="stats-card">
+      <div class="stat">
+        <div class="stat-label" id="lbl-stat-k">Wavevector k</div>
+        <div class="stat-value blue" id="stat-k">3.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lbl-stat-lam">Wavelength &lambda; = 2&pi;/k</div>
+        <div class="stat-value purple" id="stat-lam">2.09</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lbl-stat-p">Momentum p = &hbar;k</div>
+        <div class="stat-value orange" id="stat-p">3.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lbl-stat-E">Energy E = &hbar;&omega;</div>
+        <div class="stat-value red" id="stat-E">4.50</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Group velocity v&#7211;</div>
+        <div class="stat-value green" id="stat-vg">3.00</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="slider-group">
+        <label>
+          <span id="lbl-k-label">Wavevector k</span>
+          <span class="slider-val" id="lbl-k">3.0</span>
+        </label>
+        <input type="range" id="slider-k" min="1" max="8" value="3" step="0.1">
+      </div>
+      <div class="slider-group">
+        <label>
+          <span id="lbl-sig-label">Packet width &sigma;</span>
+          <span class="slider-val" id="lbl-sig">1.8</span>
+        </label>
+        <input type="range" id="slider-sig" min="0.5" max="4" value="1.8" step="0.1">
+      </div>
+      <div class="anim-controls">
+        <button id="btn-play">&#9646;&#9646; Pause</button>
+        <div class="speed-label">Speed</div>
+        <input type="range" id="slider-speed" min="0.2" max="4" value="1" step="0.1" style="width:120px;">
+        <div class="speed-label" id="lbl-speed">1.0&times;</div>
+      </div>
+    </div>
+
+    <!-- Plots -->
+    <div class="plots">
+      <div class="plot-card wf">
+        <h3 id="wf-title">Wavefunction &psi;(x,t)</h3>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:var(--accent-blue);"></span>Re[&psi;]</span>
+          <span><span class="legend-dot" style="background:var(--accent-purple);"></span>Im[&psi;]</span>
+        </div>
+        <canvas id="canvas-wf" width="600" height="380"></canvas>
+      </div>
+      <div class="plot-card prob">
+        <h3 id="prob-title">Probability Density |&psi;(x,t)|&sup2;</h3>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:var(--accent-red);"></span>|&psi;|&sup2;</span>
+          <span><span class="legend-dot" style="background:rgba(148,163,184,0.5);"></span>envelope</span>
+        </div>
+        <canvas id="canvas-prob" width="600" height="380"></canvas>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <h2>&#128270; Things to Explore</h2>
+      <ul>
+        <li>Increase k and decrease k. What happens to the wavelength &lambda; and the momentum p? Can you find the relationship between them?</li>
+        <li>Make the packet very narrow (small &sigma;). What happens to the oscillations inside? What does this tell you about the momentum of a spatially confined particle?</li>
+        <li>Watch the envelope (dashed curve on the right plot) and the wiggles inside it. Do they move at the same speed? Which one represents the particle&rsquo;s velocity?</li>
+        <li>Look at the curvature of Re[&psi;] when k is large vs. small. The kinetic energy is proportional to &minus;&part;&sup2;&psi;/&part;x&sup2;. Can you see why higher k means higher KE?</li>
+      </ul>
+      <hr class="divider">
+      <h2>&#128204; Key Relations</h2>
+      <div class="formula-box" id="key-eqs">
+        <!-- filled by KaTeX after load -->
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Wave Mechanics &amp; Schr&ouml;dinger&apos;s Equation &middot; CHM 595</footer>
+
+  <!-- KaTeX loaded synchronously so render call is safe -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <script>
+    // ── Render math ──
+    function renderMath() {
+      if (typeof renderMathInElement === 'undefined') return;
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false }
+        ],
+        throwOnError: false
+      });
+
+      // Key equations block
+      const eq = document.getElementById('key-eqs');
+      if (eq && typeof katex !== 'undefined') {
+        katex.render(
+          'p = \\hbar k \\qquad E = \\hbar\\omega = \\dfrac{\\hbar^2 k^2}{2m} \\qquad v_g = \\dfrac{d\\omega}{dk} = \\dfrac{\\hbar k}{m} \\qquad \\lambda = \\dfrac{2\\pi}{k}',
+          eq,
+          { displayMode: true, throwOnError: false }
+        );
+      }
+    }
+
+    // Try immediately, then again on DOMContentLoaded just in case
+    renderMath();
+    document.addEventListener('DOMContentLoaded', renderMath);
+
+    // ──────────────────────────────────────────────────
+    //  Canvas setup
+    // ──────────────────────────────────────────────────
+    const cWF   = document.getElementById('canvas-wf');
+    const cProb = document.getElementById('canvas-prob');
+    const ctxWF   = cWF.getContext('2d');
+    const ctxProb = cProb.getContext('2d');
+
+    function setupHiDPI(canvas, ctx) {
+      const dpr  = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width  = rect.width  * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width  = rect.width  + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+
+    function canvasSize(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      return { w: canvas.width / dpr, h: canvas.height / dpr };
+    }
+
+    const M = { top: 20, right: 22, bottom: 44, left: 54 };
+
+    // ──────────────────────────────────────────────────
+    //  Physics  (ℏ = m = 1)
+    // ──────────────────────────────────────────────────
+    let k0    = 3.0;
+    let sigma = 1.8;
+    let speed = 1.0;
+    let t     = 0;
+    let playing = true;
+    let lastTS  = null;
+    let animID  = null;
+
+    const XMIN = -10, XMAX = 10;
+    const X0   = -6;
+
+    function omegaFn(k) { return 0.5 * k * k; }
+
+    function psiAt(x, t) {
+      const vg  = k0;
+      const w   = omegaFn(k0);
+      const xc  = X0 + vg * t;
+      const span = XMAX - XMIN;
+      const xc_wrap = ((xc - XMIN) % span + span) % span + XMIN;
+      const dx  = x - xc_wrap;
+      const env = Math.exp(-dx * dx / (2 * sigma * sigma));
+      const phase = k0 * x - w * t;
+      return { re: env * Math.cos(phase), im: env * Math.sin(phase), env };
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Drawing helpers
+    // ──────────────────────────────────────────────────
+    function niceScale(min, max, n) {
+      const range = max - min;
+      if (range <= 0) return [min];
+      const raw  = range / n;
+      const p    = Math.pow(10, Math.floor(Math.log10(raw)));
+      const f    = raw / p;
+      const step = f < 1.5 ? p : f < 3.5 ? 2*p : f < 7.5 ? 5*p : 10*p;
+      const ticks = [];
+      let v = Math.ceil(min / step) * step;
+      while (v <= max + step * 0.01) { ticks.push(+v.toFixed(10)); v += step; }
+      return ticks;
+    }
+
+    function drawAxes(ctx, sz, xLabel, yLabel, xMin, xMax, yMin, yMax) {
+      const pw = sz.w - M.left - M.right;
+      const ph = sz.h - M.top  - M.bottom;
+      ctx.save();
+      ctx.font = '11px Inter, system-ui, sans-serif';
+
+      niceScale(xMin, xMax, 6).forEach(v => {
+        const px = M.left + (v - xMin) / (xMax - xMin) * pw;
+        ctx.beginPath(); ctx.moveTo(px, M.top); ctx.lineTo(px, M.top + ph);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(v.toFixed(0), px, M.top + ph + 6);
+      });
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(xLabel, M.left + pw / 2, sz.h - 4);
+
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      niceScale(yMin, yMax, 5).forEach(v => {
+        const py = M.top + ph - (v - yMin) / (yMax - yMin) * ph;
+        ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(M.left + pw, py);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(v.toFixed(2), M.left - 6, py);
+      });
+
+      ctx.save();
+      ctx.translate(13, M.top + ph / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = '#4a4d62'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.rect(M.left, M.top, pw, ph); ctx.stroke();
+      ctx.restore();
+    }
+
+    function toX(x, sz, xMin, xMax) { return M.left + (x - xMin) / (xMax - xMin) * (sz.w - M.left - M.right); }
+    function toY(y, sz, yMin, yMax) { return M.top + (sz.h - M.top - M.bottom) - (y - yMin) / (yMax - yMin) * (sz.h - M.top - M.bottom); }
+
+    function clipTo(ctx, sz) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(M.left, M.top, sz.w - M.left - M.right, sz.h - M.top - M.bottom);
+      ctx.clip();
+    }
+
+    function drawZeroLine(ctx, sz, yMin, yMax) {
+      if (yMin >= 0) return;
+      clipTo(ctx, sz);
+      const py = toY(0, sz, yMin, yMax);
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(sz.w - M.right, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawCurve(ctx, sz, xArr, yArr, xMin, xMax, yMin, yMax, color, fill) {
+      clipTo(ctx, sz);
+      const tx = x => toX(x, sz, xMin, xMax);
+      const ty = y => toY(y, sz, yMin, yMax);
+      if (fill) {
+        ctx.beginPath();
+        ctx.moveTo(tx(xArr[0]), ty(0));
+        for (let i = 0; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+        ctx.lineTo(tx(xArr[xArr.length-1]), ty(0));
+        ctx.closePath();
+        ctx.fillStyle = fill; ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.moveTo(tx(xArr[0]), ty(yArr[0]));
+      for (let i = 1; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawDashed(ctx, sz, xArr, yArr, xMin, xMax, yMin, yMax, color) {
+      clipTo(ctx, sz);
+      const tx = x => toX(x, sz, xMin, xMax);
+      const ty = y => toY(y, sz, yMin, yMax);
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx(xArr[0]), ty(yArr[0]));
+      for (let i = 1; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Main draw
+    // ──────────────────────────────────────────────────
+    const N = 800;
+    function draw() {
+      const w   = omegaFn(k0);
+      const lam = 2 * Math.PI / k0;
+
+      document.getElementById('stat-k').textContent   = k0.toFixed(2);
+      document.getElementById('stat-lam').textContent = lam.toFixed(2);
+      document.getElementById('stat-p').textContent   = k0.toFixed(2);
+      document.getElementById('stat-E').textContent   = w.toFixed(2);
+      document.getElementById('stat-vg').textContent  = k0.toFixed(2);
+
+      const xArr = [], reArr = [], imArr = [], probArr = [], envArr = [];
+      for (let i = 0; i <= N; i++) {
+        const x = XMIN + (XMAX - XMIN) * i / N;
+        const p = psiAt(x, t);
+        xArr.push(x);
+        reArr.push(p.re);
+        imArr.push(p.im);
+        probArr.push(p.re*p.re + p.im*p.im);
+        envArr.push(p.env * p.env);
+      }
+
+      const AMP = 1.0;
+      const yMaxWF   =  AMP * 1.2;
+      const yMinWF   = -AMP * 1.2;
+      const yMaxProb =  AMP * AMP * 1.15;
+
+      const sWF = canvasSize(cWF);
+      ctxWF.clearRect(0, 0, sWF.w, sWF.h);
+      drawAxes(ctxWF, sWF, 'x', 'ψ(x,t)', XMIN, XMAX, yMinWF, yMaxWF);
+      drawZeroLine(ctxWF, sWF, yMinWF, yMaxWF);
+      drawCurve(ctxWF, sWF, xArr, imArr, XMIN, XMAX, yMinWF, yMaxWF, 'rgba(139,92,246,0.85)', 'rgba(139,92,246,0.07)');
+      drawCurve(ctxWF, sWF, xArr, reArr, XMIN, XMAX, yMinWF, yMaxWF, '#3b82f6', 'rgba(59,130,246,0.09)');
+
+      const sP = canvasSize(cProb);
+      ctxProb.clearRect(0, 0, sP.w, sP.h);
+      drawAxes(ctxProb, sP, 'x', '|ψ(x,t)|²', XMIN, XMAX, 0, yMaxProb);
+      drawDashed(ctxProb, sP, xArr, envArr, XMIN, XMAX, 0, yMaxProb, 'rgba(148,163,184,0.45)');
+      drawCurve(ctxProb, sP, xArr, probArr, XMIN, XMAX, 0, yMaxProb, '#ef4444', 'rgba(239,68,68,0.12)');
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Animation loop
+    // ──────────────────────────────────────────────────
+    function animate(ts) {
+      if (lastTS !== null) t += (ts - lastTS) / 1000 * speed;
+      lastTS = ts;
+      draw();
+      if (playing) animID = requestAnimationFrame(animate);
+    }
+
+    function startAnim() {
+      if (animID) cancelAnimationFrame(animID);
+      lastTS = null;
+      animID = requestAnimationFrame(animate);
+    }
+
+    function stopAnim() {
+      if (animID) { cancelAnimationFrame(animID); animID = null; }
+    }
+
+    // ── Controls ──
+    document.getElementById('slider-k').addEventListener('input', function() {
+      k0 = parseFloat(this.value);
+      document.getElementById('lbl-k').textContent = k0.toFixed(1);
+      if (!playing) draw();
+    });
+
+    document.getElementById('slider-sig').addEventListener('input', function() {
+      sigma = parseFloat(this.value);
+      document.getElementById('lbl-sig').textContent = sigma.toFixed(1);
+      if (!playing) draw();
+    });
+
+    document.getElementById('slider-speed').addEventListener('input', function() {
+      speed = parseFloat(this.value);
+      document.getElementById('lbl-speed').textContent = speed.toFixed(1) + '×';
+    });
+
+    document.getElementById('btn-play').addEventListener('click', function() {
+      playing = !playing;
+      this.textContent = playing ? '⏸ Pause' : '▶ Play';
+      if (playing) startAnim(); else stopAnim();
+    });
+
+    window.addEventListener('resize', function() {
+      setupHiDPI(cWF, ctxWF);
+      setupHiDPI(cProb, ctxProb);
+      draw();
+    });
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', function() {
+      setupHiDPI(cWF, ctxWF);
+      setupHiDPI(cProb, ctxProb);
+      startAnim();
+      renderMath();
+    });
+  </script>
+</body>
+
+</html>
