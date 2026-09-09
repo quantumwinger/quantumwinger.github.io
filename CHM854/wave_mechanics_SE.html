@@ -323,6 +323,7 @@
         <div class="legend">
           <span><span class="legend-dot" style="background:var(--accent-blue);"></span>Re[&psi;]</span>
           <span><span class="legend-dot" style="background:var(--accent-purple);"></span>Im[&psi;]</span>
+          <span><span class="legend-dot" style="background:rgba(148,163,184,0.5);"></span>envelope</span>
         </div>
         <canvas id="canvas-wf" width="600" height="380"></canvas>
       </div>
@@ -330,7 +331,6 @@
         <h3 id="prob-title">Probability Density |&psi;(x,t)|&sup2;</h3>
         <div class="legend">
           <span><span class="legend-dot" style="background:var(--accent-red);"></span>|&psi;|&sup2;</span>
-          <span><span class="legend-dot" style="background:rgba(148,163,184,0.5);"></span>envelope</span>
         </div>
         <canvas id="canvas-prob" width="600" height="380"></canvas>
       </div>
@@ -342,7 +342,7 @@
       <ul>
         <li>Increase k and decrease k. What happens to the wavelength &lambda; and the momentum p? Can you find the relationship between them?</li>
         <li>Make the packet very narrow (small &sigma;). What happens to the oscillations inside? What does this tell you about the momentum of a spatially confined particle?</li>
-        <li>Watch the envelope (dashed curve on the right plot) and the wiggles inside it. Do they move at the same speed? Which one represents the particle&rsquo;s velocity?</li>
+        <li>Watch the dashed envelope (left plot) and the wiggles inside it. Do they move at the same speed? Which one represents the particle&rsquo;s velocity?</li>
         <li>Look at the curvature of Re[&psi;] when k is large vs. small. The kinetic energy is proportional to &minus;&part;&sup2;&psi;/&part;x&sup2;. Can you see why higher k means higher KE?</li>
       </ul>
       <hr class="divider">
@@ -354,7 +354,7 @@
 
   </div>
 
-  <footer>Wave Mechanics &amp; Schr&ouml;dinger&apos;s Equation &middot; CHM 854</footer>
+  <footer>Wave Mechanics &amp; Schr&ouml;dinger&apos;s Equation &middot; CHM 595</footer>
 
   <!-- KaTeX loaded synchronously so render call is safe -->
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -570,7 +570,7 @@
         reArr.push(p.re);
         imArr.push(p.im);
         probArr.push(p.re*p.re + p.im*p.im);
-        envArr.push(p.env * p.env);
+        envArr.push(p.env);
       }
 
       const AMP = 1.0;
@@ -578,17 +578,21 @@
       const yMinWF   = -AMP * 1.2;
       const yMaxProb =  AMP * AMP * 1.15;
 
+      const envPos = envArr;
+      const envNeg = envArr.map(v => -v);
+
       const sWF = canvasSize(cWF);
       ctxWF.clearRect(0, 0, sWF.w, sWF.h);
       drawAxes(ctxWF, sWF, 'x', 'ψ(x,t)', XMIN, XMAX, yMinWF, yMaxWF);
       drawZeroLine(ctxWF, sWF, yMinWF, yMaxWF);
+      drawDashed(ctxWF, sWF, xArr, envPos, XMIN, XMAX, yMinWF, yMaxWF, 'rgba(148,163,184,0.5)');
+      drawDashed(ctxWF, sWF, xArr, envNeg, XMIN, XMAX, yMinWF, yMaxWF, 'rgba(148,163,184,0.5)');
       drawCurve(ctxWF, sWF, xArr, imArr, XMIN, XMAX, yMinWF, yMaxWF, 'rgba(139,92,246,0.85)', 'rgba(139,92,246,0.07)');
       drawCurve(ctxWF, sWF, xArr, reArr, XMIN, XMAX, yMinWF, yMaxWF, '#3b82f6', 'rgba(59,130,246,0.09)');
 
       const sP = canvasSize(cProb);
       ctxProb.clearRect(0, 0, sP.w, sP.h);
       drawAxes(ctxProb, sP, 'x', '|ψ(x,t)|²', XMIN, XMAX, 0, yMaxProb);
-      drawDashed(ctxProb, sP, xArr, envArr, XMIN, XMAX, 0, yMaxProb, 'rgba(148,163,184,0.45)');
       drawCurve(ctxProb, sP, xArr, probArr, XMIN, XMAX, 0, yMaxProb, '#ef4444', 'rgba(239,68,68,0.12)');
     }
 
