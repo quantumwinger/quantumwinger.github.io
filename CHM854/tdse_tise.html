@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDSE, TISE & Stationary States</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d2e;
+      --card-border: #2a2d42;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --accent-green: #34d399;
+      --accent-orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background:
+        radial-gradient(ellipse at 25% 25%, rgba(59,130,246,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 75%, rgba(139,92,246,0.05) 0%, transparent 50%);
+      animation: drift 22s ease-in-out infinite alternate;
+      z-index: -1;
+    }
+
+    @keyframes drift {
+      0%   { transform: translate(0,0) rotate(0deg); }
+      100% { transform: translate(-3%,2%) rotate(3deg); }
+    }
+
+    header { text-align: center; padding: 2.5rem 1rem 1rem; }
+
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2.1rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.95rem; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+    /* ── Stats card ── */
+    .stats-card {
+      background: linear-gradient(135deg, var(--card), #1e2235);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      margin: 1.2rem auto;
+      max-width: 800px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .stat { text-align: center; }
+    .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.2rem; }
+    .stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .stat-value.blue   { color: var(--accent-blue); }
+    .stat-value.purple { color: var(--accent-purple); }
+    .stat-value.red    { color: var(--accent-red); }
+    .stat-value.green  { color: var(--accent-green); }
+    .stat-value.orange { color: var(--accent-orange); }
+
+    /* ── State badge ── */
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: background 0.4s, color 0.4s, border-color 0.4s;
+    }
+    .badge.stationary {
+      background: rgba(52,211,153,0.12);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.3);
+    }
+    .badge.oscillating {
+      background: rgba(251,146,60,0.12);
+      color: #fb923c;
+      border: 1px solid rgba(251,146,60,0.3);
+      animation: badge-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251,146,60,0); }
+      50%       { box-shadow: 0 0 0 5px rgba(251,146,60,0.12); }
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      margin: 1.2rem 0;
+      align-items: flex-start;
+    }
+
+    .slider-group {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      min-width: 220px;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .slider-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: 500;
+      margin-bottom: 0.6rem;
+      font-size: 0.88rem;
+    }
+
+    .slider-val { font-weight: 700; font-size: 1.05rem; color: var(--accent-blue); font-variant-numeric: tabular-nums; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%; height: 6px;
+      border-radius: 3px;
+      background: #2a2d42;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      box-shadow: 0 0 10px rgba(59,130,246,0.5);
+      transition: box-shadow 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 18px rgba(59,130,246,0.7); }
+    input[type=range]::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      border: none;
+      box-shadow: 0 0 10px rgba(59,130,246,0.5);
+    }
+
+    .anim-controls {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      min-width: 160px;
+    }
+
+    #btn-play {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.55rem 1.6rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+    }
+    #btn-play:hover { opacity: 0.85; transform: scale(1.03); }
+    .speed-label { font-size: 0.78rem; color: var(--text-muted); text-align: center; }
+
+    /* ── Plots ── */
+    .plots {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1.2rem;
+    }
+    @media (max-width: 700px) { .plots { grid-template-columns: 1fr; } }
+
+    .plot-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .plot-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .plot-card.wf::after   { background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); }
+    .plot-card.prob::after { background: linear-gradient(90deg, transparent, var(--accent-red), transparent); }
+
+    .plot-card h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.1rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .legend-dot  { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 3px; }
+    .legend-dash { display: inline-block; width: 14px; height: 0; border-top: 2px dashed; vertical-align: middle; margin-right: 3px; }
+
+    canvas { width: 100%; height: auto; display: block; border-radius: 8px; }
+
+    /* ── Info section ── */
+    .info-section {
+      margin-top: 2rem;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .info-section h2 { font-size: 1.05rem; font-weight: 600; color: var(--accent-purple); margin-bottom: 0.9rem; }
+    .info-section li { color: var(--text-muted); line-height: 1.7; font-size: 0.91rem; margin-bottom: 0.4rem; }
+    .info-section ul { margin-left: 1.2rem; margin-top: 0.5rem; }
+
+    .formula-box {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 10px;
+      padding: 0.9rem 1.4rem;
+      margin: 0.9rem 0;
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text);
+      overflow-x: auto;
+    }
+
+    .divider { border: none; border-top: 1px solid var(--card-border); margin: 1.2rem 0; }
+
+    footer { text-align: center; padding: 2rem 1rem; color: var(--text-dim); font-size: 0.78rem; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>&#x269B;&#xFE0F; TDSE, TISE &amp; Stationary States</h1>
+    <p style="margin-top:0.3rem; font-size:0.85rem; color:#64748b;">Developed by <strong style="color:#a78bfa;">Saswata Dasgupta</strong></p>
+  </header>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="stats-card">
+      <div class="stat">
+        <div class="stat-label">Wavevector k&#x2090;</div>
+        <div class="stat-value blue" id="stat-n1">1&pi;</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Wavevector k&#x2091;</div>
+        <div class="stat-value purple" id="stat-n2">2&pi;</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">c&#x2081;&sup2;</div>
+        <div class="stat-value orange" id="stat-c1sq">1.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">c&#x2082;&sup2;</div>
+        <div class="stat-value green" id="stat-c2sq">0.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">&Delta;E = E&#x2082; &minus; E&#x2081;</div>
+        <div class="stat-value red" id="stat-dE">—</div>
+      </div>
+      <div class="stat">
+        <div class="badge stationary" id="state-badge">STATIONARY</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="slider-group">
+        <label>Wavevector k&#x2090; <span class="slider-val" id="lbl-n1">1&pi;</span></label>
+        <input type="range" id="slider-n1" min="1" max="5" value="1" step="1">
+      </div>
+      <div class="slider-group">
+        <label>Wavevector k&#x2091; <span class="slider-val" id="lbl-n2">2&pi;</span></label>
+        <input type="range" id="slider-n2" min="2" max="6" value="2" step="1">
+      </div>
+      <div class="slider-group">
+        <label>Mixing (k&#x2090; &rarr; k&#x2091;) <span class="slider-val" id="lbl-mix">0%</span></label>
+        <input type="range" id="slider-mix" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="anim-controls">
+        <button id="btn-play">&#9646;&#9646; Pause</button>
+        <div class="speed-label">Speed</div>
+        <input type="range" id="slider-speed" min="0.05" max="0.5" value="0.15" step="0.05" style="width:120px;">
+        <div class="speed-label" id="lbl-speed">0.15&times;</div>
+      </div>
+    </div>
+
+    <!-- Plots -->
+    <div class="plots">
+      <div class="plot-card wf">
+        <h3>Wavefunction &Psi;(x,t)</h3>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:var(--accent-blue);"></span>Re[&Psi;]</span>
+          <span><span class="legend-dot" style="background:var(--accent-purple);"></span>Im[&Psi;]</span>
+          <span><span class="legend-dash" style="border-color:rgba(59,130,246,0.4);"></span>&psi;(k&#x2090;) ref</span>
+          <span><span class="legend-dash" style="border-color:rgba(139,92,246,0.4);"></span>&psi;(k&#x2091;) ref</span>
+        </div>
+        <canvas id="canvas-wf" width="600" height="380"></canvas>
+      </div>
+      <div class="plot-card prob">
+        <h3>Probability Density |&Psi;(x,t)|&sup2;</h3>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:var(--accent-red);"></span>|&Psi;|&sup2;</span>
+          <span><span class="legend-dash" style="border-color:rgba(148,163,184,0.55);"></span>c&#x2090;&sup2;|&psi;(k&#x2090;)|&sup2; + c&#x2091;&sup2;|&psi;(k&#x2091;)|&sup2;</span>
+        </div>
+        <canvas id="canvas-prob" width="600" height="380"></canvas>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <h2>&#128270; Things to Explore</h2>
+      <ul>
+        <li>Keep mixing at 0% and watch the left plot. Re[&Psi;] and Im[&Psi;] both oscillate &mdash; yet |&Psi;|&sup2; on the right never moves. The phase e<sup>&minus;iEt/&hbar;</sup> just rotates &Psi; without changing its size. Can you explain why the square of a pure phase is always 1?</li>
+        <li>Slowly drag the mixing slider toward 50%. At exactly what mixing value does the probability density start to oscillate? What is special about 0% and 100%?</li>
+        <li>At 50% mixing with k&#x2090;=&pi; and k&#x2091;=2&pi;, watch the right plot. Does the probability appear to shift from one side of the box to the other? What term in |&Psi;|&sup2; is responsible?</li>
+        <li>Increase the gap between k&#x2090; and k&#x2091; (try k&#x2090;=&pi;, k&#x2091;=4&pi;). Does the oscillation speed up or slow down? How does a larger &Delta;k relate to a larger &Delta;E and a shorter period?</li>
+      </ul>
+      <hr class="divider">
+      <h2>&#128204; Key Equations</h2>
+      <div class="formula-box" id="eq1"></div>
+      <div class="formula-box" id="eq2"></div>
+    </div>
+
+  </div>
+
+  <footer>TDSE, TISE &amp; Stationary States &middot; CHM 595</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <script>
+    // ── Math rendering ──
+    function renderMath() {
+      if (typeof katex === 'undefined') return;
+      const opts = { displayMode: true, throwOnError: false };
+      const e1 = document.getElementById('eq1');
+      const e2 = document.getElementById('eq2');
+      if (e1) katex.render(
+        '\\Psi(x,t)=c_1\\,\\psi_1(x)\\,e^{-iE_1 t/\\hbar}+c_2\\,\\psi_2(x)\\,e^{-iE_2 t/\\hbar}',
+        e1, opts
+      );
+      if (e2) katex.render(
+        '|\\Psi(x,t)|^2=c_1^2|\\psi_1|^2+c_2^2|\\psi_2|^2+\\underbrace{2c_1c_2\\,\\psi_1\\psi_2\\cos\\!\\left(\\tfrac{(E_2-E_1)\\,t}{\\hbar}\\right)}_{\\text{oscillating cross-term — vanishes for a stationary state}}',
+        e2, opts
+      );
+    }
+    renderMath();
+    document.addEventListener('DOMContentLoaded', renderMath);
+
+    // ──────────────────────────────────────────────────
+    //  Canvas setup
+    // ──────────────────────────────────────────────────
+    const cWF   = document.getElementById('canvas-wf');
+    const cProb = document.getElementById('canvas-prob');
+    const ctxWF   = cWF.getContext('2d');
+    const ctxProb = cProb.getContext('2d');
+
+    function setupHiDPI(canvas, ctx) {
+      const dpr  = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width  = rect.width  * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width  = rect.width  + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+
+    function sz(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      return { w: canvas.width / dpr, h: canvas.height / dpr };
+    }
+
+    const M = { top: 20, right: 22, bottom: 44, left: 54 };
+
+    // ──────────────────────────────────────────────────
+    //  Physics  (ℏ = m = 1, L = 1)
+    // ──────────────────────────────────────────────────
+    const L = 1.0;
+    let n1 = 1, n2 = 2;
+    let mix   = 0.0;    // 0..1
+    let speed = 0.15;
+    let t = 0;
+    let playing = true;
+    let lastTS = null, animID = null;
+
+    // ψ_n(x) for infinite square well on [0,L]
+    function psiN(n, x) { return Math.sqrt(2.0 / L) * Math.sin(n * Math.PI * x / L); }
+    // Energy eigenvalues (ℏ=m=1)
+    function En(n)  { return n * n * Math.PI * Math.PI / (2.0 * L * L); }
+
+    // c1 = cos(θ), c2 = sin(θ)  where θ = mix·π/2  → always normalised
+    function getCoeffs() {
+      const theta = mix * Math.PI / 2.0;
+      return { c1: Math.cos(theta), c2: Math.sin(theta) };
+    }
+
+    // Full complex wavefunction Ψ(x,t)
+    function getWF(x, t) {
+      const { c1, c2 } = getCoeffs();
+      const E1 = En(n1), E2 = En(n2);
+      const p1 = psiN(n1, x), p2 = psiN(n2, x);
+      const re =  c1 * p1 * Math.cos(E1 * t) + c2 * p2 * Math.cos(E2 * t);
+      const im = -c1 * p1 * Math.sin(E1 * t) - c2 * p2 * Math.sin(E2 * t);
+      return { re, im };
+    }
+
+    // Time-averaged (cross-term-free) probability density
+    function avgProb(x) {
+      const { c1, c2 } = getCoeffs();
+      const p1 = psiN(n1, x), p2 = psiN(n2, x);
+      return c1*c1*p1*p1 + c2*c2*p2*p2;
+    }
+
+    function isStationary() { return mix < 0.02 || mix > 0.98; }
+
+    // ──────────────────────────────────────────────────
+    //  Drawing helpers  (same as wave_mechanics_SE)
+    // ──────────────────────────────────────────────────
+    function niceScale(min, max, n) {
+      const range = max - min;
+      if (range <= 0) return [min];
+      const raw = range / n;
+      const p = Math.pow(10, Math.floor(Math.log10(raw)));
+      const f = raw / p;
+      const step = f < 1.5 ? p : f < 3.5 ? 2*p : f < 7.5 ? 5*p : 10*p;
+      const ticks = [];
+      let v = Math.ceil(min / step) * step;
+      while (v <= max + step * 0.01) { ticks.push(+v.toFixed(10)); v += step; }
+      return ticks;
+    }
+
+    function drawAxes(ctx, s, xLabel, yLabel, xMin, xMax, yMin, yMax) {
+      const pw = s.w - M.left - M.right;
+      const ph = s.h - M.top  - M.bottom;
+      ctx.save();
+      ctx.font = '11px Inter, system-ui, sans-serif';
+
+      niceScale(xMin, xMax, 6).forEach(v => {
+        const px = M.left + (v - xMin) / (xMax - xMin) * pw;
+        ctx.beginPath(); ctx.moveTo(px, M.top); ctx.lineTo(px, M.top + ph);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(v.toFixed(1), px, M.top + ph + 6);
+      });
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(xLabel, M.left + pw / 2, s.h - 4);
+
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      niceScale(yMin, yMax, 5).forEach(v => {
+        const py = M.top + ph - (v - yMin) / (yMax - yMin) * ph;
+        ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(M.left + pw, py);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(v.toFixed(2), M.left - 6, py);
+      });
+
+      ctx.save();
+      ctx.translate(13, M.top + ph / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#94a3b8';
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = '#4a4d62'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.rect(M.left, M.top, pw, ph); ctx.stroke();
+      ctx.restore();
+    }
+
+    function toX(x, s, xMin, xMax) { return M.left + (x - xMin) / (xMax - xMin) * (s.w - M.left - M.right); }
+    function toY(y, s, yMin, yMax) { return M.top + (s.h - M.top - M.bottom) * (1 - (y - yMin) / (yMax - yMin)); }
+
+    function clipTo(ctx, s) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(M.left, M.top, s.w - M.left - M.right, s.h - M.top - M.bottom);
+      ctx.clip();
+    }
+
+    function drawZeroLine(ctx, s, yMin, yMax) {
+      if (yMin >= 0) return;
+      clipTo(ctx, s);
+      const py = toY(0, s, yMin, yMax);
+      ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(s.w - M.right, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawCurve(ctx, s, xArr, yArr, xMin, xMax, yMin, yMax, color, fill) {
+      clipTo(ctx, s);
+      const tx = x => toX(x, s, xMin, xMax);
+      const ty = y => toY(y, s, yMin, yMax);
+      if (fill) {
+        ctx.beginPath();
+        ctx.moveTo(tx(xArr[0]), ty(0));
+        for (let i = 0; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+        ctx.lineTo(tx(xArr[xArr.length-1]), ty(0));
+        ctx.closePath();
+        ctx.fillStyle = fill; ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.moveTo(tx(xArr[0]), ty(yArr[0]));
+      for (let i = 1; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawDashedCurve(ctx, s, xArr, yArr, xMin, xMax, yMin, yMax, color, lw) {
+      clipTo(ctx, s);
+      const tx = x => toX(x, s, xMin, xMax);
+      const ty = y => toY(y, s, yMin, yMax);
+      ctx.setLineDash([5,4]); ctx.strokeStyle = color; ctx.lineWidth = lw || 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx(xArr[0]), ty(yArr[0]));
+      for (let i = 1; i < xArr.length; i++) ctx.lineTo(tx(xArr[i]), ty(yArr[i]));
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Main draw
+    // ──────────────────────────────────────────────────
+    const N = 600;
+    const XMIN = 0, XMAX = L;
+
+    function draw() {
+      const { c1, c2 } = getCoeffs();
+      const E1 = En(n1), E2 = En(n2);
+      const dE = E2 - E1;
+      const stationary = isStationary();
+
+      // ── Update stats ──
+      document.getElementById('stat-n1').textContent   = n1 + 'π';
+      document.getElementById('stat-n2').textContent   = n2 + 'π';
+      document.getElementById('stat-c1sq').textContent = (c1*c1).toFixed(2);
+      document.getElementById('stat-c2sq').textContent = (c2*c2).toFixed(2);
+      document.getElementById('stat-dE').textContent   = dE.toFixed(2);
+
+      const badge = document.getElementById('state-badge');
+      if (stationary) {
+        badge.textContent = 'STATIONARY';
+        badge.className   = 'badge stationary';
+      } else {
+        badge.textContent = 'OSCILLATING';
+        badge.className   = 'badge oscillating';
+      }
+
+      // ── Generate data arrays ──
+      const xArr = [], reArr = [], imArr = [], probArr = [], avgArr = [];
+      const ref1Arr = [], ref2Arr = [];
+      for (let i = 0; i <= N; i++) {
+        const x = XMIN + (XMAX - XMIN) * i / N;
+        const { re, im } = getWF(x, t);
+        xArr.push(x);
+        reArr.push(re);
+        imArr.push(im);
+        probArr.push(re*re + im*im);
+        avgArr.push(avgProb(x));
+        ref1Arr.push(psiN(n1, x));
+        ref2Arr.push(psiN(n2, x));
+      }
+
+      const yMaxWF   =  2.0;
+      const yMinWF   = -2.0;
+      const yMaxProb =  3.5;
+
+      // ── Wavefunction plot ──
+      const sWF = sz(cWF);
+      ctxWF.clearRect(0, 0, sWF.w, sWF.h);
+      drawAxes(ctxWF, sWF, 'x', 'Ψ(x,t)', XMIN, XMAX, yMinWF, yMaxWF);
+      drawZeroLine(ctxWF, sWF, yMinWF, yMaxWF);
+      // faint eigenstates as reference (opacity ∝ weight)
+      const a1 = 0.12 + c1*c1 * 0.35;
+      const a2 = 0.12 + c2*c2 * 0.35;
+      drawDashedCurve(ctxWF, sWF, xArr, ref1Arr, XMIN, XMAX, yMinWF, yMaxWF, `rgba(59,130,246,${a1.toFixed(2)})`, 1.2);
+      drawDashedCurve(ctxWF, sWF, xArr, ref2Arr, XMIN, XMAX, yMinWF, yMaxWF, `rgba(139,92,246,${a2.toFixed(2)})`, 1.2);
+      // animated wavefunction
+      drawCurve(ctxWF, sWF, xArr, imArr, XMIN, XMAX, yMinWF, yMaxWF, 'rgba(139,92,246,0.85)', 'rgba(139,92,246,0.07)');
+      drawCurve(ctxWF, sWF, xArr, reArr, XMIN, XMAX, yMinWF, yMaxWF, '#3b82f6', 'rgba(59,130,246,0.09)');
+
+      // ── Probability density plot ──
+      const sP = sz(cProb);
+      ctxProb.clearRect(0, 0, sP.w, sP.h);
+      drawAxes(ctxProb, sP, 'x', '|Ψ(x,t)|²', XMIN, XMAX, 0, yMaxProb);
+      drawDashedCurve(ctxProb, sP, xArr, avgArr, XMIN, XMAX, 0, yMaxProb, 'rgba(148,163,184,0.5)', 1.5);
+      drawCurve(ctxProb, sP, xArr, probArr, XMIN, XMAX, 0, yMaxProb, '#ef4444', 'rgba(239,68,68,0.12)');
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Animation loop
+    // ──────────────────────────────────────────────────
+    function animate(ts) {
+      if (lastTS !== null) t += (ts - lastTS) / 1000 * speed;
+      lastTS = ts;
+      draw();
+      if (playing) animID = requestAnimationFrame(animate);
+    }
+
+    function startAnim() {
+      if (animID) cancelAnimationFrame(animID);
+      lastTS = null;
+      animID = requestAnimationFrame(animate);
+    }
+
+    function stopAnim() {
+      if (animID) { cancelAnimationFrame(animID); animID = null; }
+    }
+
+    // ──────────────────────────────────────────────────
+    //  Event listeners
+    // ──────────────────────────────────────────────────
+    document.getElementById('slider-n1').addEventListener('input', function() {
+      n1 = parseInt(this.value);
+      if (n2 <= n1) {
+        n2 = n1 + 1;
+        const sn2 = document.getElementById('slider-n2');
+        sn2.value = n2;
+        document.getElementById('lbl-n2').textContent = n2 + 'π';
+      }
+      document.getElementById('lbl-n1').textContent = n1 + 'π';
+      if (!playing) draw();
+    });
+
+    document.getElementById('slider-n2').addEventListener('input', function() {
+      n2 = parseInt(this.value);
+      if (n2 <= n1) { n2 = n1 + 1; this.value = n2; }
+      document.getElementById('lbl-n2').textContent = n2 + 'π';
+      if (!playing) draw();
+    });
+
+    document.getElementById('slider-mix').addEventListener('input', function() {
+      mix = parseInt(this.value) / 100.0;
+      document.getElementById('lbl-mix').textContent = parseInt(this.value) + '%';
+      if (!playing) draw();
+    });
+
+    document.getElementById('slider-speed').addEventListener('input', function() {
+      speed = parseFloat(this.value);
+      document.getElementById('lbl-speed').textContent = speed.toFixed(2) + '×';
+    });
+
+    document.getElementById('btn-play').addEventListener('click', function() {
+      playing = !playing;
+      this.textContent = playing ? '⏸ Pause' : '▶ Play';
+      if (playing) startAnim(); else stopAnim();
+    });
+
+    window.addEventListener('resize', function() {
+      setupHiDPI(cWF, ctxWF);
+      setupHiDPI(cProb, ctxProb);
+      draw();
+    });
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', function() {
+      setupHiDPI(cWF, ctxWF);
+      setupHiDPI(cProb, ctxProb);
+      startAnim();
+      renderMath();
+    });
+  </script>
+</body>
+
+</html>
