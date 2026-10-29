@@ -354,6 +354,14 @@ p {
 .latest-news {
     display: flex;
     flex-direction: column;
+    contain: size; /* Ignore news content height so the row is sized by About Our Group; the list scrolls */
+}
+
+@media (max-width: 1024px) {
+    .latest-news {
+        contain: none;
+        max-height: 640px;
+    }
 }
 
 /* Latest News */
@@ -393,6 +401,30 @@ p {
 
 .news-item:last-child {
     border-bottom: 1px solid var(--border-color);
+}
+
+.news-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.news-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: var(--accent-primary);
+    background: rgba(152, 0, 0, 0.08);
+    border: 1px solid rgba(152, 0, 0, 0.2);
+}
+
+.news-header .news-date {
+    margin-bottom: 0;
 }
 
 .news-date {
