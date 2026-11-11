@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle on a Sphere — Spherical Harmonics</title>
+  <meta name="description"
+    content="Interactive particle-on-a-sphere explorer: 3D spherical harmonics (real and complex), phase evolution, vector model of angular momentum, and ladder operators.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d2e;
+      --card-border: #2a2d42;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --accent-teal: #14b8a6;
+      --accent-amber: #f59e0b;
+      --accent-green: #34d399;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .katex { text-transform: none; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background:
+        radial-gradient(ellipse at 25% 20%, rgba(139, 92, 246, 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 80%, rgba(20, 184, 166, 0.05) 0%, transparent 50%);
+      animation: drift 22s ease-in-out infinite alternate;
+      z-index: -1;
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      100% { transform: translate(-3%, 2%) rotate(3deg); }
+    }
+
+    /* ── Header ── */
+    header { text-align: center; padding: 2.4rem 1rem 0.8rem; }
+
+    header h1 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #2dd4bf);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.95rem; }
+
+    .container { max-width: 1240px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+    /* ── Stats card ── */
+    .energy-card {
+      background: linear-gradient(135deg, var(--card), #1e2235);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      margin: 1.1rem auto;
+      max-width: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.8rem;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat { text-align: center; min-width: 70px; }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ── Controls ── */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin: 1.2rem 0;
+    }
+
+    .slider-group {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.9rem 1.3rem;
+    }
+
+    .slider-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+    }
+
+    .slider-val {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--accent-blue);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #2a2d42;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 19px; height: 19px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 19px; height: 19px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      border: none;
+    }
+
+    .seg {
+      display: flex;
+      background: #12141f;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .seg button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.45rem 0.5rem;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .seg button.active {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: #fff;
+    }
+
+    .play-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.5rem 1.2rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      font-family: inherit;
+    }
+
+    .btn:hover { opacity: 0.85; transform: scale(1.03); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn.ghost { background: #232742; border: 1px solid var(--card-border); }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .speed-label { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* ── Plots ── */
+    .plots {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.1rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 860px) { .plots { grid-template-columns: 1fr; } }
+
+    .plot-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plot-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .plot-card.c-purple::after { background: linear-gradient(90deg, transparent, var(--accent-purple), transparent); }
+    .plot-card.c-teal::after { background: linear-gradient(90deg, transparent, var(--accent-teal), transparent); }
+    .plot-card.c-amber::after { background: linear-gradient(90deg, transparent, var(--accent-amber), transparent); }
+    .plot-card.c-blue::after { background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); }
+
+    .plot-card h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    canvas { width: 100%; display: block; border-radius: 8px; }
+    #canvas-3d { height: 470px; cursor: grab; touch-action: none; }
+    #canvas-3d:active { cursor: grabbing; }
+    #canvas-vec { height: 470px; }
+    #canvas-map { height: 300px; }
+    #canvas-ladder { height: 300px; cursor: pointer; }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      min-height: 1.4rem;
+    }
+
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; vertical-align: middle; }
+
+    .hint { font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 0.3rem; }
+
+    .ladder-out {
+      margin-top: 0.6rem;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem;
+      text-align: center;
+      min-height: 3rem;
+      font-size: 0.95rem;
+      overflow-x: auto;
+    }
+
+    .ladder-btns { display: flex; justify-content: center; gap: 0.7rem; margin-top: 0.6rem; }
+
+    .note {
+      font-size: 0.78rem;
+      color: #fcd34d;
+      text-align: center;
+      margin-top: 0.4rem;
+      min-height: 1.1rem;
+    }
+
+    /* ── Info ── */
+    .info-section {
+      margin-top: 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.4rem 1.9rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .info-section h2 { font-size: 1.05rem; font-weight: 600; color: var(--accent-purple); margin-bottom: 0.9rem; }
+
+    .info-section p, .info-section li { color: var(--text-muted); line-height: 1.75; font-size: 0.91rem; }
+    .info-section ul { margin-left: 1.2rem; margin-top: 0.4rem; }
+    .info-section li { margin-bottom: 0.3rem; }
+
+    .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.8rem; }
+
+    .formula-box {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      border-radius: 10px;
+      padding: 0.8rem 1.2rem;
+      text-align: center;
+      font-size: 0.98rem;
+      color: var(--text);
+      overflow-x: auto;
+    }
+
+    footer { text-align: center; padding: 2rem 1rem; color: var(--text-dim); font-size: 0.78rem; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🌐 Particle on a Sphere — Spherical Harmonics</h1>
+    <p>Explore $Y_{\ell m_\ell}(\theta,\phi)$ in 3D, watch the phase evolve in time, and connect it to quantized angular momentum</p>
+    <p style="margin-top:0.3rem; font-size:0.85rem; color:#64748b;">Developed by <strong style="color:#a78bfa;">Saswata Dasgupta</strong></p>
+  </header>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="energy-card">
+      <div class="stat">
+        <div class="stat-label">$\ell$</div>
+        <div class="stat-value" id="stat-l" style="color:var(--accent-blue);">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">$m_\ell$</div>
+        <div class="stat-value" id="stat-m" style="color:var(--accent-purple);">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">$E_\ell\;(\hbar^2/2I)$</div>
+        <div class="stat-value" id="stat-E" style="color:var(--accent-red);">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">$|\vec L|\;(\hbar)$</div>
+        <div class="stat-value" id="stat-L" style="color:var(--accent-green);">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">$L_z\;(\hbar)$</div>
+        <div class="stat-value" id="stat-Lz" style="color:var(--accent-teal);">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Degeneracy</div>
+        <div class="stat-value" id="stat-deg" style="color:var(--accent-amber);">1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Angular nodes</div>
+        <div class="stat-value" id="stat-nodes" style="color:#f472b6;">0</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="slider-group">
+        <label>Quantum number $\ell$ <span class="slider-val" id="lbl-l">0</span></label>
+        <input type="range" id="slider-l" min="0" max="6" value="2" step="1">
+      </div>
+      <div class="slider-group">
+        <label>Magnetic number $m_\ell$ <span class="slider-val" id="lbl-m">0</span></label>
+        <input type="range" id="slider-m" min="-2" max="2" value="1" step="1">
+      </div>
+      <div class="slider-group">
+        <label>Representation <span class="slider-val" id="lbl-rep" style="font-size:0.85rem;">complex</span></label>
+        <div class="seg" id="seg-rep">
+          <button data-rep="complex" class="active">Complex $Y_{\ell m}$</button>
+          <button data-rep="real">Real (orbitals)</button>
+        </div>
+      </div>
+      <div class="slider-group">
+        <div class="play-row">
+          <button class="btn" id="btn-play">⏸ Pause</button>
+          <label class="check"><input type="checkbox" id="chk-spin" checked> Spin view</label>
+          <label class="check"><input type="checkbox" id="chk-phase" checked> Time evolution</label>
+        </div>
+        <div class="play-row" style="margin-top:0.55rem;">
+          <span class="speed-label">Speed</span>
+          <input type="range" id="slider-speed" min="0.2" max="3" value="1" step="0.1" style="flex:1;">
+          <span class="speed-label" id="lbl-speed">1.0×</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="plots">
+      <div class="plot-card c-purple">
+        <h3 id="title-3d">3D surface: radius $|Y_{\ell m}|$, color = phase</h3>
+        <canvas id="canvas-3d"></canvas>
+        <div class="legend-row" id="legend-3d"></div>
+        <div class="hint">Drag to rotate · double-click to reset view</div>
+      </div>
+      <div class="plot-card c-teal">
+        <h3>Vector model of $\vec L$</h3>
+        <canvas id="canvas-vec"></canvas>
+        <div class="legend-row">
+          <span>$|\vec L| = \hbar\sqrt{\ell(\ell+1)}$</span>
+          <span>$L_z = m_\ell\hbar$</span>
+        </div>
+        <div class="note" id="vec-note"></div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="plots">
+      <div class="plot-card c-blue">
+        <h3 id="title-map">Unwrapped sphere: $\theta$–$\phi$ map</h3>
+        <canvas id="canvas-map"></canvas>
+        <div class="hint" id="hint-map">Brightness = $|Y|$ (dark bands are nodes); hue = phase. For $m_\ell>0$ the phase pattern drifts toward $+\phi$ (counter-clockwise).</div>
+      </div>
+      <div class="plot-card c-amber">
+        <h3>Energy levels &amp; ladder operators</h3>
+        <canvas id="canvas-ladder"></canvas>
+        <div class="ladder-btns">
+          <button class="btn ghost" id="btn-lower">Apply $\hat L_-$</button>
+          <button class="btn ghost" id="btn-raise">Apply $\hat L_+$</button>
+        </div>
+        <div class="ladder-out" id="ladder-out"></div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <h2>📖 Key Equations</h2>
+      <div class="formula-grid">
+        <div class="formula-box">$$\hat H = -\frac{\hbar^2}{2I}\Lambda^2 = \frac{\hat L^2}{2I},\qquad I = mr^2$$</div>
+        <div class="formula-box">$$E_\ell = \frac{\hbar^2}{2I}\,\ell(\ell+1),\quad \ell=0,1,2,\dots,\quad m_\ell=-\ell,\dots,\ell$$</div>
+        <div class="formula-box">$$Y_{\ell m_\ell}(\theta,\phi) = N_{\ell m_\ell}\,P_\ell^{|m_\ell|}(\cos\theta)\,e^{i m_\ell\phi}$$</div>
+        <div class="formula-box">$$\hat L^2 Y_{\ell m_\ell} = \hbar^2\ell(\ell+1)\,Y_{\ell m_\ell},\qquad \hat L_z Y_{\ell m_\ell} = m_\ell\hbar\,Y_{\ell m_\ell}$$</div>
+        <div class="formula-box">$$\Psi(\theta,\phi,t) = Y_{\ell m_\ell}(\theta,\phi)\,e^{-iE_\ell t/\hbar}$$</div>
+        <div class="formula-box">$$\hat L_\pm Y_{\ell m_\ell} = \hbar\sqrt{\ell(\ell+1)-m_\ell(m_\ell\pm1)}\;Y_{\ell,m_\ell\pm1}$$</div>
+      </div>
+
+      <h2 style="margin-top:1.3rem;">🔍 Things to Explore</h2>
+      <ul>
+        <li><strong>Stationary states:</strong> With time evolution on, the <em>phase</em> moves but $|Y|$ (the shape) never changes. Only $|\Psi|^2$ is observable, and it is time independent.</li>
+        <li><strong>Direction of circulation:</strong> For complex $Y_{\ell m}$ with $m_\ell>0$, lines of constant phase move toward $+\phi$ (counter-clockwise seen from $+z$); flip to $m_\ell<0$ and they reverse. Compare with the $\pm m_\ell$ states of the particle on a ring.</li>
+        <li><strong>$\ell = 0$:</strong> $E=0$, so nothing evolves at all. There is no zero-point energy on a sphere.</li>
+        <li><strong>Real vs complex:</strong> Real orbitals ($p_x$, $d_{xy}$, …) are combinations of $\pm m_\ell$. They have the same energy but are <em>not</em> eigenfunctions of $\hat L_z$, so $\langle L_z\rangle = 0$ and they show nodal planes through the $z$ axis.</li>
+        <li><strong>Nodes:</strong> Every $Y_{\ell m}$ has $\ell$ angular nodes. In real form: $\ell-|m_\ell|$ nodal cones (constant $\theta$) and $|m_\ell|$ nodal planes (constant $\phi$).</li>
+        <li><strong>Vector model:</strong> $|L_z| < |\vec L|$ always, so $\vec L$ never points exactly along $z$. $L_x$ and $L_y$ are undetermined, which is why $\vec L$ is drawn somewhere on a cone.</li>
+        <li><strong>Ladder operators:</strong> $\hat L_\pm$ keep $\ell$ (and $E$) fixed and step $m_\ell$ by $\pm1$; the ladder stops at $m_\ell=\pm\ell$.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>Particle on a Sphere &amp; Spherical Harmonics · CHM 854 · Saswata Dasgupta</footer>
+
+  <script>
+    // ─────────────────────────────────────────────
+    // Math: associated Legendre (with Condon–Shortley phase) and Y_lm
+    // ─────────────────────────────────────────────
+    function assocLegendre(l, m, x) {
+      m = Math.abs(m);
+      let pmm = 1.0;
+      if (m > 0) {
+        const somx2 = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+        let fact = 1.0;
+        for (let i = 1; i <= m; i++) { pmm *= -fact * somx2; fact += 2.0; }
+      }
+      if (l === m) return pmm;
+      let pmmp1 = x * (2 * m + 1) * pmm;
+      if (l === m + 1) return pmmp1;
+      let pll = 0;
+      for (let ll = m + 2; ll <= l; ll++) {
+        pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+        pmm = pmmp1; pmmp1 = pll;
+      }
+      return pll;
+    }
+
+    function normLM(l, m) {
+      const am = Math.abs(m);
+      let ratio = 1.0;
+      for (let i = l - am + 1; i <= l + am; i++) ratio *= i;
+      return Math.sqrt((2 * l + 1) / (4 * Math.PI) / ratio);
+    }
+
+    // Complex Y_lm (Condon–Shortley). Returns [re, im].
+    function Ycomplex(l, m, theta, phi) {
+      const am = Math.abs(m);
+      let a = normLM(l, m) * assocLegendre(l, am, Math.cos(theta));
+      if (m < 0 && am % 2 === 1) a = -a;          // Y_{l,-m} = (-1)^m Y_{lm}^*
+      const ang = m * phi;
+      return [a * Math.cos(ang), a * Math.sin(ang)];
+    }
+
+    // Real (chemist's) harmonics: p_x positive along +x, etc.
+    function Yreal(l, m, theta, phi) {
+      const am = Math.abs(m);
+      let a = normLM(l, m) * assocLegendre(l, am, Math.cos(theta));
+      if (am % 2 === 1) a = -a;                    // remove Condon–Shortley sign
+      if (m > 0) return Math.SQRT2 * a * Math.cos(m * phi);
+      if (m < 0) return Math.SQRT2 * a * Math.sin(am * phi);
+      return a;
+    }
+
+    const realNames = {
+      '0,0': 's',
+      '1,-1': 'p_y', '1,0': 'p_z', '1,1': 'p_x',
+      '2,-2': 'd_{xy}', '2,-1': 'd_{yz}', '2,0': 'd_{z^2}', '2,1': 'd_{xz}', '2,2': 'd_{x^2-y^2}',
+      '3,-3': 'f_{y(3x^2-y^2)}', '3,-2': 'f_{xyz}', '3,-1': 'f_{yz^2}', '3,0': 'f_{z^3}',
+      '3,1': 'f_{xz^2}', '3,2': 'f_{z(x^2-y^2)}', '3,3': 'f_{x(x^2-3y^2)}'
+    };
+    const shellNames = ['s', 'p', 'd', 'f', 'g', 'h', 'i'];
+
+    // ─────────────────────────────────────────────
+    // State
+    // ─────────────────────────────────────────────
+    const state = {
+      l: 2, m: 1, rep: 'complex',
+      playing: true, spin: true, phaseOn: true, speed: 1,
+      t: 0,                          // "time" for phase evolution
+      yaw: 0.6, pitch: 0.35,         // view angles
+      precess: 0,                    // vector-model precession angle
+      ladderMsg: null
+    };
+
+    // ─────────────────────────────────────────────
+    // Canvas helpers
+    // ─────────────────────────────────────────────
+    const els = {};
+    ['canvas-3d', 'canvas-vec', 'canvas-map', 'canvas-ladder'].forEach(id => {
+      const c = document.getElementById(id);
+      els[id] = { c, ctx: c.getContext('2d'), w: 0, h: 0 };
+    });
+
+    function fitCanvas(o) {
+      const dpr = window.devicePixelRatio || 1;
+      const r = o.c.getBoundingClientRect();
+      o.w = r.width; o.h = r.height;
+      o.c.width = Math.round(r.width * dpr);
+      o.c.height = Math.round(r.height * dpr);
+      o.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function fitAll() { Object.values(els).forEach(fitCanvas); }
+
+    function hsv2rgb(h, s, v) {               // h in [0,1)
+      const i = Math.floor(h * 6), f = h * 6 - i;
+      const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+      let r, g, b;
+      switch (((i % 6) + 6) % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        default: r = v; g = p; b = q;
+      }
+      return [r * 255, g * 255, b * 255];
+    }
+
+    const POS = [59, 130, 246], NEG = [239, 68, 68];
+
+    function katexInline(el, tex) {
+      try { katex.render(tex, el, { throwOnError: false, displayMode: false }); }
+      catch (e) { el.textContent = tex; }
+    }
+
+    // ─────────────────────────────────────────────
+    // Surface grid cache
+    // ─────────────────────────────────────────────
+    const NT = 56, NP = 84;
+    let grid = null;                          // per node: x,y,z (unit dir * r), re, im, r
+    let gridMax = 1;
+
+    function buildGrid() {
+      const { l, m, rep } = state;
+      grid = new Array((NT + 1) * (NP + 1));
+      gridMax = 0;
+      for (let i = 0; i <= NT; i++) {
+        const th = i / NT * Math.PI;
+        for (let j = 0; j <= NP; j++) {
+          const ph = j / NP * 2 * Math.PI;
+          let re, im;
+          if (rep === 'complex') { [re, im] = Ycomplex(l, m, th, ph); }
+          else { re = Yreal(l, m, th, ph); im = 0; }
+          const r = Math.hypot(re, im);
+          if (r > gridMax) gridMax = r;
+          grid[i * (NP + 1) + j] = {
+            ux: Math.sin(th) * Math.cos(ph), uy: Math.sin(th) * Math.sin(ph), uz: Math.cos(th),
+            re, im, r
+          };
+        }
+      }
+      if (gridMax === 0) gridMax = 1;
+    }
+
+    function omega() { return state.l * (state.l + 1); }   // E/ħ in units of ħ/2I (×const)
+
+    // ─────────────────────────────────────────────
+    // 3D surface (painter's algorithm with Lambert shading)
+    // ─────────────────────────────────────────────
+    function draw3D() {
+      const o = els['canvas-3d'], ctx = o.ctx;
+      ctx.clearRect(0, 0, o.w, o.h);
+      const cx = o.w / 2, cy = o.h / 2 + 8;
+      const scale = Math.min(o.w, o.h) * 0.40;
+
+      const cyw = Math.cos(state.yaw), syw = Math.sin(state.yaw);
+      const cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+      // world (x,y,z), right-handed with z up → view [X right, Y up, depth away from viewer]
+      // (at yaw = pitch = 0: x points right, y into the screen, z up)
+      function rot(x, y, z) {
+        const x1 = x * cyw - y * syw;
+        const y1 = x * syw + y * cyw;
+        const Y = z * cp + y1 * sp;
+        const away = y1 * cp - z * sp;
+        return [x1, Y, away];
+      }
+
+      const phaseShift = state.rep === 'complex' ? -omega() * state.t : 0;
+      const cs = Math.cos(phaseShift), sn = Math.sin(phaseShift);
+
+      // project all nodes
+      const P = new Array(grid.length);
+      for (let k = 0; k < grid.length; k++) {
+        const g = grid[k];
+        const rr = g.r / gridMax;
+        const v = rot(g.ux * rr, g.uy * rr, g.uz * rr);
+        P[k] = v;
+      }
+
+      const light = [-0.35, 0.55, 0.76];
+      const faces = [];
+      for (let i = 0; i < NT; i++) {
+        for (let j = 0; j < NP; j++) {
+          const k00 = i * (NP + 1) + j, k10 = k00 + NP + 1, k01 = k00 + 1, k11 = k10 + 1;
+          const a = P[k00], b = P[k10], c = P[k11], d = P[k01];
+          const rAvg = (grid[k00].r + grid[k10].r + grid[k11].r + grid[k01].r) / 4 / gridMax;
+          if (rAvg < 1e-4) continue;
+          // normal from diagonals
+          const e1 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+          const e2 = [d[0] - b[0], d[1] - b[1], d[2] - b[2]];
+          let n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+          const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+          const lam = Math.abs((n[0] * light[0] + n[1] * light[1] + n[2] * light[2]) / nl);
+          const shade = 0.32 + 0.68 * lam;
+          const depth = (a[2] + b[2] + c[2] + d[2]) / 4;
+
+          // colour
+          let rgb;
+          const re = (grid[k00].re + grid[k10].re + grid[k11].re + grid[k01].re);
+          const im = (grid[k00].im + grid[k10].im + grid[k11].im + grid[k01].im);
+          if (state.rep === 'complex') {
+            const re2 = re * cs - im * sn, im2 = re * sn + im * cs;
+            const h = (Math.atan2(im2, re2) / (2 * Math.PI) + 1) % 1;
+            rgb = hsv2rgb(h, 0.78, 1);
+          } else {
+            rgb = re >= 0 ? POS : NEG;
+          }
+          faces.push({ a, b, c, d, depth, col: `rgb(${rgb[0] * shade | 0},${rgb[1] * shade | 0},${rgb[2] * shade | 0})` });
+        }
+      }
+      faces.sort((f, g) => g.depth - f.depth);   // far (larger depth) first
+
+      // axes (drawn first so the surface hides the parts behind it)
+      const axes = [[1, 0, 0, 'x', '#60a5fa'], [0, 1, 0, 'y', '#34d399'], [0, 0, 1, 'z', '#f472b6']];
+      ctx.save();
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const [x, y, z, lab, col] of axes) {
+        const v = rot(x * 1.15, y * 1.15, z * 1.15);
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.4;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + v[0] * scale, cy - v[1] * scale); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        ctx.fillStyle = col;
+        ctx.fillText(lab, cx + v[0] * scale * 1.08, cy - v[1] * scale * 1.08);
+      }
+      ctx.restore();
+
+
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 0.6;
+      for (const f of faces) {
+        ctx.beginPath();
+        ctx.moveTo(cx + f.a[0] * scale, cy - f.a[1] * scale);
+        ctx.lineTo(cx + f.b[0] * scale, cy - f.b[1] * scale);
+        ctx.lineTo(cx + f.c[0] * scale, cy - f.c[1] * scale);
+        ctx.lineTo(cx + f.d[0] * scale, cy - f.d[1] * scale);
+        ctx.closePath();
+        ctx.fillStyle = f.col;
+        ctx.strokeStyle = f.col;
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '13px Inter, sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      const lbl = state.rep === 'complex'
+        ? `Y(ℓ=${state.l}, m=${state.m})`
+        : `real ℓ=${state.l}, m=${state.m}` + (realNames[`${state.l},${state.m}`] ? `  (${realNames[`${state.l},${state.m}`].replace(/[_{}]/g, '')})` : '');
+      ctx.fillText(lbl, 12, 10);
+    }
+
+    // ─────────────────────────────────────────────
+    // Vector model (precessing L on its cone)
+    // ─────────────────────────────────────────────
+    function drawVec() {
+      const o = els['canvas-vec'], ctx = o.ctx;
+      ctx.clearRect(0, 0, o.w, o.h);
+      const { l, m } = state;
+      const L = Math.sqrt(l * (l + 1));
+      const cx0 = o.w / 2, cy = o.h / 2;
+      const unit = Math.min(o.w * 0.30, o.h * 0.40) / Math.max(L, 1);
+      const cx = cx0 - o.w * 0.06;
+      const tilt = 0.28;                       // ellipse squash for perspective
+
+      // z axis
+      ctx.strokeStyle = 'rgba(244,114,182,0.6)'; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(cx, cy + (L + 0.6) * unit); ctx.lineTo(cx, cy - (L + 0.8) * unit); ctx.stroke();
+      ctx.fillStyle = '#f472b6'; ctx.font = 'bold 12px Inter, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('z', cx, cy - (L + 0.8) * unit - 8);
+
+      // reference sphere |L|
+      if (l > 0) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.setLineDash([4, 5]);
+        ctx.beginPath(); ctx.arc(cx, cy, L * unit, 0, 2 * Math.PI); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // all allowed cones, current one highlighted
+      for (let mm = -l; mm <= l; mm++) {
+        const rho = Math.sqrt(Math.max(0, L * L - mm * mm));
+        const y = cy - mm * unit;
+        const cur = mm === m;
+        ctx.strokeStyle = cur ? 'rgba(20,184,166,0.95)' : 'rgba(148,163,184,0.25)';
+        ctx.lineWidth = cur ? 1.8 : 1;
+        ctx.beginPath(); ctx.ellipse(cx, y, rho * unit, rho * unit * tilt, 0, 0, 2 * Math.PI); ctx.stroke();
+        if (cur) {
+          ctx.strokeStyle = 'rgba(20,184,166,0.25)';
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - rho * unit, y); ctx.moveTo(cx, cy); ctx.lineTo(cx + rho * unit, y); ctx.stroke();
+        }
+        ctx.fillStyle = cur ? '#5eead4' : '#64748b';
+        ctx.font = (cur ? 'bold ' : '') + '11px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`m = ${mm > 0 ? '+' : ''}${mm}`, cx + L * unit + 12, y + 4);
+        ctx.strokeStyle = 'rgba(148,163,184,0.18)';
+        ctx.beginPath(); ctx.moveTo(cx + rho * unit + 3, y); ctx.lineTo(cx + L * unit + 8, y); ctx.stroke();
+      }
+
+      // precessing vector (meaningful for complex / L_z eigenstates)
+      const rho = Math.sqrt(Math.max(0, L * L - m * m));
+      const ang = state.precess;
+      const tipX = cx + rho * unit * Math.cos(ang);
+      const tipY = cy - m * unit + rho * unit * tilt * Math.sin(ang);
+      const real = state.rep === 'real' && m !== 0;
+      ctx.globalAlpha = real ? 0.35 : 1;
+      // projection
+      ctx.strokeStyle = 'rgba(94,234,212,0.6)'; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(cx, cy - m * unit); ctx.stroke();
+      ctx.setLineDash([]);
+      // L_z arrow
+      if (m !== 0) {
+        arrow(ctx, cx, cy, cx, cy - m * unit, '#14b8a6', 3);
+      }
+      // L vector
+      if (l > 0) arrow(ctx, cx, cy, tipX, tipY, '#34d399', 3);
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(`ℓ = ${l}:  |L| = √${l * (l + 1)} ħ ≈ ${L.toFixed(2)} ħ`, 12, 18);
+      ctx.fillText(`L_z = ${m}ħ,  angle to z = ${l > 0 ? (Math.acos(m / L) * 180 / Math.PI).toFixed(1) + '°' : '—'}`, 12, 36);
+      if (l === 0) {
+        ctx.textAlign = 'center';
+        ctx.fillText('ℓ = 0: no angular momentum', cx, cy + 40);
+      }
+    }
+
+    function arrow(ctx, x0, y0, x1, y1, col, w) {
+      const a = Math.atan2(y1 - y0, x1 - x0), hl = 10;
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - hl * 0.6 * Math.cos(a), y1 - hl * 0.6 * Math.sin(a)); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 - hl * Math.cos(a - 0.4), y1 - hl * Math.sin(a - 0.4));
+      ctx.lineTo(x1 - hl * Math.cos(a + 0.4), y1 - hl * Math.sin(a + 0.4));
+      ctx.closePath(); ctx.fill();
+    }
+
+    // ─────────────────────────────────────────────
+    // θ–φ map (unwrapped sphere)
+    // ─────────────────────────────────────────────
+    const MW = 240, MH = 120;
+    const off = document.createElement('canvas'); off.width = MW; off.height = MH;
+    const offCtx = off.getContext('2d');
+    const img = offCtx.createImageData(MW, MH);
+    let mapVals = null, mapMax = 1;
+
+    function buildMap() {
+      const { l, m, rep } = state;
+      mapVals = new Float32Array(MW * MH * 2); mapMax = 0;
+      for (let i = 0; i < MH; i++) {
+        const th = (i + 0.5) / MH * Math.PI;
+        for (let j = 0; j < MW; j++) {
+          const ph = (j + 0.5) / MW * 2 * Math.PI;
+          let re, im;
+          if (rep === 'complex') [re, im] = Ycomplex(l, m, th, ph);
+          else { re = Yreal(l, m, th, ph); im = 0; }
+          const k = 2 * (i * MW + j);
+          mapVals[k] = re; mapVals[k + 1] = im;
+          const r = Math.hypot(re, im); if (r > mapMax) mapMax = r;
+        }
+      }
+      if (mapMax === 0) mapMax = 1;
+    }
+
+    function drawMap() {
+      const o = els['canvas-map'], ctx = o.ctx;
+      ctx.clearRect(0, 0, o.w, o.h);
+      const padL = 52, padR = 12, padT = 12, padB = 30;
+      const W = o.w - padL - padR, H = o.h - padT - padB;
+
+      const ps = state.rep === 'complex' ? -omega() * state.t : 0;
+      const cs = Math.cos(ps), sn = Math.sin(ps);
+      const d = img.data;
+      for (let p = 0; p < MW * MH; p++) {
+        const re = mapVals[2 * p], im = mapVals[2 * p + 1];
+        let rgb;
+        if (state.rep === 'complex') {
+          const re2 = re * cs - im * sn, im2 = re * sn + im * cs;
+          const h = (Math.atan2(im2, re2) / (2 * Math.PI) + 1) % 1;
+          const v = Math.pow(Math.hypot(re, im) / mapMax, 0.6);
+          rgb = hsv2rgb(h, 0.8, v);
+        } else {
+          const t = re / mapMax;
+          const base = t >= 0 ? POS : NEG, a = Math.pow(Math.abs(t), 0.6);
+          rgb = [15 + (base[0] - 15) * a, 17 + (base[1] - 17) * a, 23 + (base[2] - 23) * a];
+        }
+        d[4 * p] = rgb[0]; d[4 * p + 1] = rgb[1]; d[4 * p + 2] = rgb[2]; d[4 * p + 3] = 255;
+      }
+      offCtx.putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(off, padL, padT, W, H);
+
+      // frame + ticks
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+      ctx.strokeRect(padL, padT, W, H);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      const phT = ['0', 'π/2', 'π', '3π/2', '2π'];
+      phT.forEach((s, i) => {
+        const x = padL + i / 4 * W;
+        ctx.fillText(s, x, padT + H + 4);
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + H); ctx.stroke();
+      });
+      ctx.fillText('φ', padL + W / 2, padT + H + 16);
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ['0', 'π/2', 'π'].forEach((s, i) => {
+        const y = padT + i / 2 * H;
+        ctx.fillText(s, padL - 6, y);
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + W, y); ctx.stroke();
+      });
+      ctx.save(); ctx.font = '13px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('θ', 10, padT + H / 2); ctx.restore();
+    }
+
+    // ─────────────────────────────────────────────
+    // Energy ladder
+    // ─────────────────────────────────────────────
+    const LMAX = 6;
+    let ladderHits = [];
+
+    function drawLadder() {
+      const o = els['canvas-ladder'], ctx = o.ctx;
+      ctx.clearRect(0, 0, o.w, o.h);
+      const padL = 46, padR = 14, padT = 16, padB = 14;
+      const W = o.w - padL - padR, H = o.h - padT - padB;
+      const Emax = LMAX * (LMAX + 1);
+      // sqrt-ish scale so low levels are visible
+      const yOf = E => padT + H - Math.sqrt(E / Emax) * H;
+      const slot = Math.min(W / (2 * LMAX + 4), 30);
+      const midX = padL + (LMAX + 0.5) * slot;
+      ladderHits = [];
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.moveTo(padL - 8, padT + H + 4); ctx.lineTo(padL - 8, padT - 4); ctx.stroke();
+      ctx.font = '10px Inter, sans-serif';
+
+      for (let l = 0; l <= LMAX; l++) {
+        const E = l * (l + 1), y = yOf(E);
+        const curL = l === state.l;
+        ctx.fillStyle = curL ? '#fbbf24' : '#64748b';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(`${E}`, padL - 12, y);
+        ctx.textAlign = 'left';
+        ctx.fillText(`ℓ=${l} (${shellNames[l]})`, midX + (l + 0.6) * slot, y);
+        for (let mm = -l; mm <= l; mm++) {
+          const x = midX + mm * slot;
+          const cur = curL && mm === state.m;
+          ctx.strokeStyle = cur ? '#f59e0b' : (curL ? 'rgba(245,158,11,0.55)' : 'rgba(148,163,184,0.45)');
+          ctx.lineWidth = cur ? 4 : 2;
+          ctx.beginPath(); ctx.moveTo(x - slot * 0.36, y); ctx.lineTo(x + slot * 0.36, y); ctx.stroke();
+          if (cur) {
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath(); ctx.arc(x, y - 6, 3.2, 0, 2 * Math.PI); ctx.fill();
+          }
+          ladderHits.push({ x0: x - slot / 2, x1: x + slot / 2, y0: y - 8, y1: y + 8, l, m: mm });
+        }
+      }
+      ctx.save(); ctx.translate(12, padT + H / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('E (ħ²/2I)', 0, 0); ctx.restore();
+    }
+
+    // ─────────────────────────────────────────────
+    // UI updates
+    // ─────────────────────────────────────────────
+    const sliderL = document.getElementById('slider-l');
+    const sliderM = document.getElementById('slider-m');
+
+    function setLM(l, m, fromLadder) {
+      state.l = l; state.m = Math.max(-l, Math.min(l, m));
+      sliderL.value = state.l;
+      sliderM.min = -state.l; sliderM.max = state.l; sliderM.value = state.m;
+      if (!fromLadder) state.ladderMsg = null;
+      refresh();
+    }
+
+    function fmtSigned(v) { return v > 0 ? `+${v}` : `${v}`; }
+
+    function refresh() {
+      const { l, m, rep } = state;
+      document.getElementById('lbl-l').textContent = l;
+      document.getElementById('lbl-m').textContent = fmtSigned(m);
+      document.getElementById('stat-l').textContent = l;
+      document.getElementById('stat-m').textContent = fmtSigned(m);
+      document.getElementById('stat-E').textContent = l * (l + 1);
+      document.getElementById('stat-L').textContent = l === 0 ? '0' : `√${l * (l + 1)}`;
+      document.getElementById('stat-Lz').textContent = (rep === 'real' && m !== 0) ? '— (⟨L_z⟩=0)' : fmtSigned(m);
+      document.getElementById('stat-deg').textContent = 2 * l + 1;
+      document.getElementById('stat-nodes').textContent = rep === 'real'
+        ? `${l} (${l - Math.abs(m)} cone, ${Math.abs(m)} plane)`
+        : `${l}`;
+      document.getElementById('lbl-rep').textContent = rep;
+
+      const leg = document.getElementById('legend-3d');
+      const t3 = document.getElementById('title-3d');
+      if (rep === 'complex') {
+        katexInline(t3, '\\text{3D surface: radius } |Y_{\\ell m}|,\\ \\text{color = phase}');
+        leg.innerHTML = '<span>phase</span><canvas id="wheel" width="150" height="10" style="width:150px;height:10px;border-radius:4px;"></canvas><span>0 → 2π</span>';
+        const w = document.getElementById('wheel').getContext('2d');
+        for (let i = 0; i < 150; i++) { const c = hsv2rgb(i / 150, 0.78, 1); w.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; w.fillRect(i, 0, 1, 10); }
+      } else {
+        katexInline(t3, '\\text{3D surface: radius } |Y|,\\ \\text{color = sign}' +
+          (realNames[`${l},${m}`] ? `\\quad (${realNames[`${l},${m}`]})` : ''));
+        leg.innerHTML = '<span><span class="legend-dot" style="background:#3b82f6;"></span> positive lobe</span>' +
+          '<span><span class="legend-dot" style="background:#ef4444;"></span> negative lobe</span>';
+      }
+      document.getElementById('hint-map').textContent = rep === 'complex'
+        ? 'Brightness = |Y| (dark bands are nodes); hue = phase. For m > 0 the phase pattern drifts toward +φ (counter-clockwise); for m < 0 it drifts the other way.'
+        : 'Blue = positive, red = negative, dark = nodes. Vertical dark lines are nodal planes (|m| of them); horizontal ones are nodal cones (ℓ − |m|).';
+
+      document.getElementById('vec-note').textContent = (rep === 'real' && m !== 0)
+        ? 'Real orbitals mix +m and −m: they are not L_z eigenstates (vector shown faded).'
+        : '';
+
+      document.getElementById('btn-raise').disabled = false;
+      document.getElementById('btn-lower').disabled = false;
+
+      const out = document.getElementById('ladder-out');
+      if (state.ladderMsg) katexInline(out, state.ladderMsg);
+      else katexInline(out, `Y_{${l},${m}}:\\quad E=${l * (l + 1)}\\,\\tfrac{\\hbar^2}{2I},\\quad ${2 * l + 1}\\text{-fold degenerate}`);
+
+      buildGrid();
+      buildMap();
+      drawAll();
+    }
+
+    function applyLadder(sign) {
+      const { l, m } = state;
+      const op = sign > 0 ? '\\hat L_+' : '\\hat L_-';
+      const arg = l * (l + 1) - m * (m + sign);
+      if (arg <= 0) {
+        state.ladderMsg = `${op}\\,Y_{${l},${m}} = 0\\quad\\text{(end of the ladder: } m_\\ell=${sign > 0 ? '+' : '-'}\\ell)`;
+        refresh();
+        return;
+      }
+      const s = Math.sqrt(arg);
+      const exact = Number.isInteger(s) ? `${s}` : `\\sqrt{${arg}}`;
+      state.ladderMsg = `${op}\\,Y_{${l},${m}} = \\hbar\\sqrt{${l}(${l + 1})-(${m})(${m + sign})}\\;Y_{${l},${m + sign}} = ${exact}\\,\\hbar\\,Y_{${l},${m + sign}}`;
+      setLM(l, m + sign, true);
+    }
+
+    function drawAll() { draw3D(); drawVec(); drawMap(); drawLadder(); }
+
+    // ─────────────────────────────────────────────
+    // Events
+    // ─────────────────────────────────────────────
+    sliderL.addEventListener('input', () => setLM(parseInt(sliderL.value), state.m));
+    sliderM.addEventListener('input', () => setLM(state.l, parseInt(sliderM.value)));
+
+    document.querySelectorAll('#seg-rep button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#seg-rep button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.rep = b.dataset.rep;
+      refresh();
+    }));
+
+    document.getElementById('btn-play').addEventListener('click', function () {
+      state.playing = !state.playing;
+      this.textContent = state.playing ? '⏸ Pause' : '▶ Play';
+    });
+    document.getElementById('chk-spin').addEventListener('change', e => state.spin = e.target.checked);
+    document.getElementById('chk-phase').addEventListener('change', e => state.phaseOn = e.target.checked);
+    document.getElementById('slider-speed').addEventListener('input', e => {
+      state.speed = parseFloat(e.target.value);
+      document.getElementById('lbl-speed').textContent = state.speed.toFixed(1) + '×';
+    });
+    document.getElementById('btn-raise').addEventListener('click', () => applyLadder(+1));
+    document.getElementById('btn-lower').addEventListener('click', () => applyLadder(-1));
+
+    // drag to rotate
+    const c3 = els['canvas-3d'].c;
+    let drag = null;
+    c3.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; c3.setPointerCapture(e.pointerId); });
+    c3.addEventListener('pointermove', e => {
+      if (!drag) return;
+      state.yaw += (e.clientX - drag.x) * 0.01;
+      state.pitch = Math.max(-1.45, Math.min(1.45, state.pitch + (e.clientY - drag.y) * 0.01));
+      drag = { x: e.clientX, y: e.clientY };
+      if (!state.playing) draw3D();
+    });
+    c3.addEventListener('pointerup', () => drag = null);
+    c3.addEventListener('pointercancel', () => drag = null);
+    c3.addEventListener('dblclick', () => { state.yaw = 0.6; state.pitch = 0.35; draw3D(); });
+
+    // click on ladder to choose state
+    els['canvas-ladder'].c.addEventListener('click', e => {
+      const r = e.target.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      const hit = ladderHits.find(h => x >= h.x0 && x <= h.x1 && y >= h.y0 && y <= h.y1);
+      if (hit) setLM(hit.l, hit.m);
+    });
+
+    window.addEventListener('resize', () => { fitAll(); drawAll(); });
+
+    // ─────────────────────────────────────────────
+    // Animation loop
+    // ─────────────────────────────────────────────
+    let last = null;
+    function loop(ts) {
+      if (last === null) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+      if (state.playing) {
+        if (state.spin && !drag) state.yaw += 0.35 * dt * state.speed;
+        if (state.phaseOn) state.t += 0.12 * dt * state.speed;
+        // precession: direction follows sign of m (counter-clockwise from +z for m>0)
+        const dir = state.m >= 0 ? 1 : -1;
+        state.precess -= dir * 1.2 * dt * state.speed;
+        drawAll();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    function init() {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }]
+      });
+      fitAll();
+      setLM(state.l, state.m);
+      requestAnimationFrame(loop);
+    }
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', init);
+    else init();
+  </script>
+
+</body>
+
+</html>
